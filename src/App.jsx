@@ -257,13 +257,9 @@ export default function App() {
         }
       }
     } catch (err) {
-      console.warn("Production backend connection error. Publishing listing directly to local runtime state instead.");
+      console.error("Listing publish failed:", err);
+      alert("Cloud database upload failed! Details: " + (err.response?.data?.error || err.message));
     }
-
-    // Local runtime fallback update
-    setProductsList(prev => [newProduct, ...prev]);
-    setVideosList(prev => [newVideo, ...prev]);
-    setView('feed');
   };
 
   // Delete Shop Listing
