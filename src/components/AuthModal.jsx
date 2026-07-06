@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, User, ShoppingBag, ShieldAlert, Key } from 'lucide-react';
+import { X, User, ShoppingBag, ShieldAlert, Key, Landmark, Check } from 'lucide-react';
 import { apiService } from '../services/api';
 
 export default function AuthModal({ onClose, onAuthSuccess }) {
@@ -74,7 +74,7 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
       <div 
         className="shop-profile-modal upload-modal glass" 
         onClick={(e) => e.stopPropagation()}
-        style={{ background: 'var(--bg-primary)', maxWidth: '480px' }}
+        style={{ background: 'var(--bg-primary)', maxWidth: '500px' }}
       >
         <button className="modal-close-btn" onClick={onClose} aria-label="Close authentication">
           <X size={18} />
@@ -87,7 +87,7 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
             {isLogin ? 'Welcome Back' : 'Join Avioc Market'}
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {isLogin ? 'Log in to your Buyer or Shop owner account' : 'Buy street items, book local services, or start selling'}
+            {isLogin ? 'Log in to your Buyer or Shop owner account' : 'Select your account type to get started'}
           </p>
         </div>
 
@@ -121,27 +121,67 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           
-          {/* Sign Up Options: Role Toggle */}
+          {/* Sign Up Options: Premium Role Cards */}
           {!isLogin && (
-            <div className="form-group" style={{ marginBottom: '8px' }}>
-              <span className="form-label">I want to:</span>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button 
-                  type="button"
-                  className={`category-pill ${role === 'user' ? 'active' : ''}`}
-                  style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+            <div className="form-group" style={{ marginBottom: '12px' }}>
+              <span className="form-label" style={{ marginBottom: '8px' }}>I want to register as:</span>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {/* Role Card 1: Buyer */}
+                <div 
                   onClick={() => setRole('user')}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    border: `1.5px solid ${role === 'user' ? 'var(--color-emerald)' : 'var(--border-glass)'}`,
+                    background: role === 'user' ? 'rgba(228, 203, 171, 0.05)' : 'var(--bg-secondary)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
                 >
-                  <User size={16} /> Buyer / User
-                </button>
-                <button 
-                  type="button"
-                  className={`category-pill ${role === 'seller' ? 'active' : ''}`}
-                  style={{ flex: 1, padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  {role === 'user' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--color-emerald)', color: '#000', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
+                      <Check size={10} strokeWidth={4} />
+                    </span>
+                  )}
+                  <User size={24} style={{ color: role === 'user' ? 'var(--color-emerald)' : 'var(--color-text-secondary)' }} />
+                  <strong style={{ fontSize: '0.9rem', color: role === 'user' ? 'var(--color-emerald)' : 'white' }}>Buyer / User</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', lineHeight: '1.2' }}>Browse & shop items instantly</span>
+                </div>
+
+                {/* Role Card 2: Seller */}
+                <div 
                   onClick={() => setRole('seller')}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    border: `1.5px solid ${role === 'seller' ? 'var(--color-emerald)' : 'var(--border-glass)'}`,
+                    background: role === 'seller' ? 'rgba(228, 203, 171, 0.05)' : 'var(--bg-secondary)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
                 >
-                  <ShoppingBag size={16} /> Open Shop (Seller)
-                </button>
+                  {role === 'seller' && (
+                    <span style={{ position: 'absolute', top: '8px', right: '8px', background: 'var(--color-emerald)', color: '#000', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center' }}>
+                      <Check size={10} strokeWidth={4} />
+                    </span>
+                  )}
+                  <ShoppingBag size={24} style={{ color: role === 'seller' ? 'var(--color-emerald)' : 'var(--color-text-secondary)' }} />
+                  <strong style={{ fontSize: '0.9rem', color: role === 'seller' ? 'var(--color-emerald)' : 'white' }}>Shop / Seller</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', lineHeight: '1.2' }}>Open store & post listing videos</span>
+                </div>
               </div>
             </div>
           )}
@@ -285,7 +325,7 @@ export default function AuthModal({ onClose, onAuthSuccess }) {
               </div>
 
               {/* Waiting status warning preview */}
-              <div style={{ background: 'rgba(250,204,21,0.05)', border: '1px solid rgba(250,204,21,0.15)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: '#fbbf24', display: 'flex', gap: '8px' }}>
+              <div style={{ background: 'rgba(228, 203, 171, 0.05)', border: '1px solid rgba(228, 203, 171, 0.15)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--color-emerald)', display: 'flex', gap: '8px' }}>
                 <Key size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <span>Notice: Sellers must wait for admin confirmation before listing products or appearing in the video feed.</span>
               </div>
