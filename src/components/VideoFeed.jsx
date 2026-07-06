@@ -111,6 +111,19 @@ export default function VideoFeed({
             method: action
           }), '*');
 
+          // If transitioning to active and playing, restart from the beginning (seek to 0)
+          if (isActive && !isPaused) {
+            iframe.contentWindow.postMessage(JSON.stringify({
+              context: 'player.js',
+              method: 'setCurrentTime',
+              value: 0
+            }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({
+              method: 'setCurrentTime',
+              value: 0
+            }), '*');
+          }
+
           // Send volume postMessage rules (unmute if active, mute if hidden/adjacent)
           const volumeVal = (isActive && !isPaused) ? 1 : 0;
           iframe.contentWindow.postMessage(JSON.stringify({
@@ -131,6 +144,7 @@ export default function VideoFeed({
         const video = document.querySelector(`#video-player-${vid.id}`);
         if (video) {
           if (isActive && !isPaused) {
+            video.currentTime = 0; // Start over from beginning
             video.play().catch(() => {});
             video.muted = false;
           } else {
