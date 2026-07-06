@@ -10,6 +10,8 @@ const Video = require('../models/Video');
 const Shop = require('../models/Shop');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'omweso_uganda_super_secret_key';
+const BUNNY_LIBRARY_ID = process.env.BUNNY_STREAM_LIBRARY_ID || process.env.BUNNY_LIBRARY_ID;
+const BUNNY_API_KEY = process.env.BUNNY_STREAM_API_KEY || process.env.BUNNY_API_KEY;
 
 // Middleware to protect routes & extract shop ID from JWT
 function authenticateToken(req, res, next) {
@@ -45,7 +47,7 @@ router.get('/', async (req, res) => {
               id: v._id,
               shopId: shop._id,
               productId: listing ? listing._id : null,
-              videoSrc: `https://iframe.mediadelivery.net/play/${process.env.BUNNY_LIBRARY_ID}/${v.bunnyVideoId}`,
+              videoSrc: `https://iframe.mediadelivery.net/play/${BUNNY_LIBRARY_ID}/${v.bunnyVideoId}`,
               imageFallback: listing ? listing.imageUrl : '',
               caption: v.caption,
               likes: v.likesCount,
@@ -100,7 +102,7 @@ router.get('/', async (req, res) => {
         id: row.video_id,
         shopId: row.shop_id,
         productId: row.product_id,
-        videoSrc: `https://iframe.mediadelivery.net/play/${process.env.BUNNY_LIBRARY_ID}/${row.bunny_video_id}`,
+        videoSrc: `https://iframe.mediadelivery.net/play/${BUNNY_LIBRARY_ID}/${row.bunny_video_id}`,
         imageFallback: row.product_image,
         caption: row.caption,
         likes: row.video_likes,
@@ -144,8 +146,8 @@ router.get('/', async (req, res) => {
 // 2. INITIALIZE A VIDEO RECORD ON BUNNY STREAM & RETRIEVE UPLOAD TOKEN
 router.get('/bunny/prepare-upload', authenticateToken, async (req, res) => {
   const { title } = req.query;
-  const libraryId = process.env.BUNNY_LIBRARY_ID;
-  const apiKey = process.env.BUNNY_API_KEY;
+  const libraryId = BUNNY_LIBRARY_ID;
+  const apiKey = BUNNY_API_KEY;
 
   if (!libraryId || !apiKey) {
     return res.status(500).json({ error: "Server Bunny.net credentials are not configured." });
