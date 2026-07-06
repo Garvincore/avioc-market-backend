@@ -66,6 +66,16 @@ export const apiService = {
     localStorage.removeItem('avioc_seller');
   },
 
+  getProfile: async () => {
+    const response = await axios.get(`${API_URL}/auth/me`, { headers: getAuthHeaders() });
+    if (response.data.role === 'user') {
+      localStorage.setItem('avioc_user', JSON.stringify(response.data.user));
+    } else if (response.data.role === 'seller') {
+      localStorage.setItem('avioc_seller', JSON.stringify(response.data.shop));
+    }
+    return response.data;
+  },
+
   // 3. SECURE BUNNY STREAM & LISTING UPLOADS (Double-Hop Flow)
   publishListing: async (listingData, videoFile) => {
     try {

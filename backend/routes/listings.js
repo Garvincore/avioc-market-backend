@@ -179,7 +179,8 @@ router.post('/', authenticateToken, async (req, res) => {
     type, 
     bunnyVideoId, 
     caption, 
-    tags 
+    tags,
+    imageUrl
   } = req.body;
 
   if (!title || !price || !bunnyVideoId || !caption) {
@@ -203,7 +204,7 @@ router.post('/', authenticateToken, async (req, res) => {
         price: parseFloat(price),
         category,
         type,
-        imageUrl: `https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=80`
+        imageUrl: imageUrl || `https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=80`
       });
 
       const newVideo = await Video.create({
@@ -235,7 +236,7 @@ router.post('/', authenticateToken, async (req, res) => {
       `INSERT INTO listings (shop_id, title, description, price, category, type, image_url) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) 
        RETURNING *`,
-      [req.shopId, title, description, price, category, type, `https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=80`]
+      [req.shopId, title, description, price, category, type, imageUrl || `https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=80`]
     );
 
     const newListing = listingResult.rows[0];

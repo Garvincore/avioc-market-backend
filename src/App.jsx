@@ -40,7 +40,6 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentRole, setCurrentRole] = useState(null); // 'user' or 'seller'
 
-  // Load Session & Sync Feed Data
   useEffect(() => {
     const role = localStorage.getItem('avioc_role');
     const token = localStorage.getItem('avioc_token');
@@ -51,6 +50,19 @@ export default function App() {
       if (stored) {
         setCurrentUser(JSON.parse(stored));
       }
+
+      // Fetch fresh status from database to dynamically reflect approval updates without logout
+      apiService.getProfile()
+        .then(data => {
+          if (data.role === 'user') {
+            setCurrentUser(data.user);
+          } else if (data.role === 'seller') {
+            setCurrentUser(data.shop);
+          }
+        })
+        .catch(err => {
+          console.warn("Dynamic profile refresh failed:", err.message);
+        });
     }
 
     const loadData = async () => {

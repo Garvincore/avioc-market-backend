@@ -7,6 +7,7 @@ export default function CreatePostModal({
   onAddListing 
 }) {
   const fileInputRef = useRef(null);
+  const imageInputRef = useRef(null);
 
   const [type, setType] = useState('product'); // 'product', 'service'
   const [title, setTitle] = useState('');
@@ -16,14 +17,15 @@ export default function CreatePostModal({
   const [caption, setCaption] = useState('');
   const [tags, setTags] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  // Handle file select from device
+  // Handle video select from device
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Check size limit (e.g. 50MB max)
     if (file.size > 50 * 1024 * 1024) {
       alert("Video file size is too large! Please choose a video under 50MB.");
       return;
@@ -32,9 +34,34 @@ export default function CreatePostModal({
     setSelectedFile(file);
   };
 
+  // Handle image select from device
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert("Image file size is too large! Please choose a photo under 8MB.");
+      return;
+    }
+
+    setImageFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result); // Base64 Data URL
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleBoxClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const handleImageBoxClick = () => {
+    if (imageInputRef.current) {
+      imageInputRef.current.click();
     }
   };
 
@@ -47,6 +74,11 @@ export default function CreatePostModal({
 
     if (!selectedFile) {
       alert("Please select a showcase video file from your device!");
+      return;
+    }
+
+    if (!imageFile) {
+      alert("Please select a cover photo/product image from your device!");
       return;
     }
 
@@ -66,17 +98,6 @@ export default function CreatePostModal({
       processedTags.push(type === 'product' ? 'NewProduct' : 'NewService');
     }
 
-    // Mock category representation image
-    const mockImages = {
-      Food: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=500&auto=format&fit=crop&q=80",
-      Fashion: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=500&auto=format&fit=crop&q=80",
-      Electronics: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80",
-      "Tours & Travel": "https://images.unsplash.com/photo-1506197603052-3cc9c3a201bd?w=500&auto=format&fit=crop&q=80",
-      Beauty: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=500&auto=format&fit=crop&q=80"
-    };
-
-    const fallbackImg = mockImages[category] || "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&auto=format&fit=crop&q=80";
-
     const shopId = currentUser?.id || "shop_anonymous";
 
     // Generate listing parameters
@@ -86,7 +107,8 @@ export default function CreatePostModal({
       title,
       price: priceNum,
       type,
-      image: fallbackImg,
+      image: imagePreview, // base64 preview for local display
+      imageUrl: imagePreview, // sent to backend to save in database
       description,
       category,
       rating: 5.0,
@@ -195,6 +217,60 @@ export default function CreatePostModal({
                   <Upload size={32} />
                   <span>Choose Video File from Device</span>
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Max size 50MB (9:16 vertical recommended)</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Hidden Image Picker Input */}
+          <input 
+            type="file" 
+            ref={imageInputRef}
+            accept="image/*" 
+            style={{ display: 'none' }}
+            onChange={handleImageChange}
+          />
+
+          {/* Product Image upload box */}
+          <div className="form-group">
+            <span className="form-label">Product Cover Photo *</span>
+            <div 
+              className="upload-file-dummy" 
+              onClick={handleImageBoxClick}
+              style={{ 
+                borderColor: imageFile ? 'var(--color-emerald)' : 'var(--border-glass)',
+                minHeight: '80px',
+                padding: '12px',
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '16px'
+              }}
+            >
+              {imageFile ? (
+                <>
+                  <img 
+                    src={imagePreview} 
+                    alt="Product Preview" 
+                    style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover', border: '1.5px solid var(--color-emerald)' }} 
+                  />
+                  <div style={{ textAlign: 'left', flex: 1 }}>
+                    <span style={{ color: 'var(--color-emerald)', fontWeight: '700', fontSize: '0.85rem', display: 'block' }}>
+                      Photo Attached
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', wordBreak: 'break-all', maxWidth: '250px' }}>
+                      {imageFile.name} ({(imageFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Upload size={20} />
+                  <div style={{ textAlign: 'left' }}>
+                    <span style={{ display: 'block', fontWeight: '600', fontSize: '0.85rem' }}>Select Product Photo</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block' }}>Displays in Catalog, Search Feed & Checkout (Max 8MB)</span>
+                  </div>
                 </>
               )}
             </div>
