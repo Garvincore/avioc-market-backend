@@ -123,6 +123,21 @@ export default function VideoFeed({
               method: 'setCurrentTime',
               value: 0
             }), '*');
+
+            // Force unmute and full volume on active player to override phone browser silencing
+            iframe.contentWindow.postMessage(JSON.stringify({
+              context: 'player.js',
+              method: 'setVolume',
+              value: 1
+            }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({
+              method: 'setVolume',
+              value: 1
+            }), '*');
+            iframe.contentWindow.postMessage(JSON.stringify({
+              context: 'player.js',
+              method: 'unmute'
+            }), '*');
           }
         }
       } else {
@@ -131,10 +146,11 @@ export default function VideoFeed({
           if (isActive && !isPaused) {
             video.currentTime = 0; // Start over from beginning
             video.play().catch(() => {});
+            video.muted = false;
+            video.volume = 1; // Full volume
           } else {
             video.pause();
           }
-          video.muted = false; // Never muted!
         }
       }
     });
