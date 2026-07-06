@@ -87,6 +87,76 @@ export default function VideoFeed({
     }
   }, [activeCommentsVideo]);
 
+  // Hook to handle volume and play/pause postMessage trigger states
+  useEffect(() => {
+    videos.forEach(vid => {
+      const isActive = activeVideoId === vid.id;
+      const isPaused = !!pausedStates[vid.id];
+      const isIframe = vid.videoSrc.includes('mediadelivery.net');
+
+      if (isIframe) {
+        const iframe = document.querySelector(`#iframe-player-${vid.id}`);
+        if (iframe && iframe.contentWindow) {
+          const action = (isActive && !isPaused) ? 'play' : 'pause';
+          
+          // Send Player.js events
+          iframe.contentWindow.postMessage(JSON.stringify({
+            context: 'player.js',
+            method: action,
+            value: ''
+          }), '*');
+
+          // Send Vimeo fallback events
+          iframe.contentWindow.postMessage(JSON.stringify({
+            method: action
+          }), '*');
+
+          // Send volume postMessage rules (unmute if active, mute if hidden/adjacent)
+          const volumeVal = (isActive && !isPaused) ? 1 : 0;
+          iframe.contentWindow.postMessage(JSON.stringify({
+            context: 'player.js',
+            method: 'setVolume',
+            value: volumeVal
+          }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({
+            method: 'setVolume',
+            value: volumeVal
+          }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({
+            context: 'player.js',
+            method: isActive && !isPaused ? 'unmute' : 'mute'
+          }), '*');
+        }
+      } else {
+        const video = document.querySelector(`#video-player-${vid.id}`);
+        if (video) {
+          if (isActive && !isPaused) {
+            video.play().catch(() => {});
+            video.muted = false;
+          } else {
+            video.pause();
+            video.muted = true;
+          }
+        }
+      }
+    });
+  }, [activeVideoId, pausedStates, videos]);
+
+  // Global listener to unmute active media as soon as the user interacts with the app
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      setPausedStates(prev => ({ ...prev })); // Force-trigger volume re-eval
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+    };
+    window.addEventListener('click', handleFirstInteraction);
+    window.addEventListener('touchstart', handleFirstInteraction);
+    return () => {
+      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('touchstart', handleFirstInteraction);
+    };
+  }, []);
+
   // Handle Play/Pause Single Tap Coalescing
   const handleVideoClick = (e, videoId, isIframe) => {
     e.stopPropagation();
@@ -256,6 +326,10 @@ export default function VideoFeed({
 
           // Construct pre-filled WhatsApp message
           const inquiryAction = product.type === 'service' ? 'I want to book.' : 'Is it still available?';
+          const activeIndex = videos.findIndex(v => v.id === vid.id);
+          const currentActiveIdx = videos.findIndex(v => v.id === activeVideoId);
+          const isAdjacent = currentActiveIdx !== -1 && Math.abs(currentActiveIdx - activeIndex) <= 1;
+          const shouldMount = isActive || isAdjacent;
 
           const whatsappMsg = encodeURIComponent(
             `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}`
@@ -281,40 +355,43 @@ export default function VideoFeed({
                 style={{ position: 'relative', width: '100%', height: '100%', background: '#000', overflow: 'hidden', cursor: 'pointer' }}
                 onClick={(e) => handleVideoClick(e, vid.id, isIframe)}
               >
-                {isActive ? (
-                  // Mount video/iframe player only when card is snapped active
-                  isIframe ? (
-                    <iframe
-                      id={`iframe-player-${vid.id}`}
-                      src={`${embedUrl}?autoplay=true&loop=true&muted=false&preload=true&controls=false`}
-                      loading="lazy"
-                      style={{
-                        border: 'none',
-                        position: 'absolute',
-                        top: '-5%',
-                        left: '-5%',
-                        width: '110%',
-                        height: '110%', // over-scale slightly to completely crop out any remaining black bars
-                        borderRadius: '16px',
-                        pointerEvents: 'none' // lets clicks pass through to our single/double-tap click handler
-                      }}
-                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                      allowFullScreen={true}
-                    />
-                  ) : (
-                    <video
-                      id={`video-player-${vid.id}`}
-                      className="video-player-element"
-                      src={vid.videoSrc}
-                      loop
-                      autoPlay
-                      playsInline
-                      poster={vid.imageFallback}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  )
-                ) : (
-                  // Unmounted/Static state: Show cover photo poster only (saves bandwidth & CPU)
+                {shouldMount ? (
+                  <div style={{ display: isActive ? 'block' : 'none', width: '100%', height: '100%' }}>
+                    {isIframe ? (
+                      <iframe
+                        id={`iframe-player-${vid.id}`}
+                        src={`${embedUrl}?autoplay=true&loop=true&muted=true&preload=true&controls=false`}
+                        style={{
+                          border: 'none',
+                          position: 'absolute',
+                          top: '-5%',
+                          left: '-5%',
+                          width: '110%',
+                          height: '110%',
+                          borderRadius: '16px',
+                          pointerEvents: 'none'
+                        }}
+                        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                        allowFullScreen={true}
+                      />
+                    ) : (
+                      <video
+                        id={`video-player-${vid.id}`}
+                        className="video-player-element"
+                        src={vid.videoSrc}
+                        loop
+                        autoPlay
+                        muted={!isActive}
+                        preload="auto"
+                        playsInline
+                        poster={vid.imageFallback}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    )}
+                  </div>
+                ) : null}
+
+                {!isActive && (
                   <div style={{ width: '100%', height: '100%', position: 'relative' }}>
                     <img 
                       src={vid.imageFallback || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500'} 
