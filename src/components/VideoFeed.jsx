@@ -29,16 +29,7 @@ export default function VideoFeed({
   const containerRef = useRef(null);
   const cardRefs = useRef({});
 
-  // 0. Load official Bunny.net Player.js script dynamically
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://assets.mediadelivery.net/playerjs/player-0.1.0.min.js';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
+
 
   // 1. Setup IntersectionObserver to track the active snapped video card in viewport
   useEffect(() => {
@@ -122,18 +113,28 @@ export default function VideoFeed({
 
     if (isIframe) {
       const iframe = document.querySelector(`#iframe-player-${videoId}`);
-      if (iframe && window.playerjs) {
-        // Use Player.js library to control Bunny Stream iframe
-        try {
-          const player = new window.playerjs.Player(iframe);
-          if (nextPausedState) {
-            player.pause();
-          } else {
-            player.play();
-          }
-        } catch (err) {
-          console.warn("PlayerJS control error:", err);
-        }
+      if (iframe && iframe.contentWindow) {
+        const action = nextPausedState ? 'pause' : 'play';
+        
+        // 1. Send Player.js method format (Bunny Stream uses this)
+        iframe.contentWindow.postMessage(JSON.stringify({
+          context: 'player.js',
+          method: action,
+          value: ''
+        }), '*');
+
+        // 2. Send Vimeo standard method format
+        iframe.contentWindow.postMessage(JSON.stringify({
+          method: action
+        }), '*');
+
+        // 3. Send YouTube standard method format
+        const ytAction = nextPausedState ? 'pauseVideo' : 'playVideo';
+        iframe.contentWindow.postMessage(JSON.stringify({
+          event: 'command',
+          func: ytAction,
+          args: ''
+        }), '*');
       }
     } else {
       const video = document.querySelector(`#video-player-${videoId}`);

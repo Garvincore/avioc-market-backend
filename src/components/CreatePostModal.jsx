@@ -351,7 +351,7 @@ export default function CreatePostModal({
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="upload-desc-input">Detailed Specifications (Jumia Description)</label>
+            <label className="form-label" htmlFor="upload-desc-input">Detailed Specifications</label>
             <textarea 
               id="upload-desc-input"
               rows={2} 

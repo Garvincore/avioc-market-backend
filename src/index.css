@@ -1425,3 +1425,167 @@ body {
     opacity: 0;
   }
 }
+
+/* Mobile Navigation Bar & Responsive Fit overrides */
+.mobile-bottom-nav {
+  display: none; /* Desktop default */
+}
+
+@media (max-width: 768px) {
+  /* Bottom Navigation Styles */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(10, 18, 15, 0.85); /* Sleek translucent dark glass */
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-top: 1.5px solid var(--border-glass);
+    z-index: 999;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 4px;
+  }
+
+  .bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    position: relative;
+    flex: 1;
+    height: 100%;
+    gap: 3px;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--color-emerald);
+  }
+
+  .bottom-nav-item svg {
+    transition: transform 0.2s ease;
+  }
+
+  .bottom-nav-item.active svg {
+    transform: scale(1.1);
+  }
+
+  .bottom-nav-item .cart-badge {
+    position: absolute;
+    top: -5px;
+    right: -10px;
+    background: var(--color-crimson);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 800;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  /* Desktop Header reductions */
+  .navbar-wrapper {
+    height: 60px;
+  }
+  
+  .navbar {
+    padding: 0 16px;
+  }
+
+  .navbar .nav-links,
+  .navbar .nav-actions {
+    display: none !important; /* Hide desktop links and buttons */
+  }
+
+  .logo-text {
+    font-size: 1.25rem;
+  }
+
+  /* Viewport spacing for Discover Feed and Shop lists */
+  .feed-viewport {
+    top: 60px;
+    bottom: 64px; /* Stop overlap with bottom navbar */
+  }
+
+  .main-content {
+    padding-top: 60px;
+    padding-bottom: 84px; /* Space for bottom nav bar */
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  /* 2-Column Marketplace Grid Layout */
+  .listings-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .listing-card {
+    border-radius: 12px;
+  }
+
+  .card-img-container {
+    height: 120px !important; /* Smaller card heights on mobile */
+  }
+
+  .card-body {
+    padding: 8px 10px 10px 10px !important; /* Extremely tight spacing */
+  }
+
+  .card-shop-name {
+    font-size: 0.72rem !important;
+    margin-bottom: 6px !important;
+  }
+
+  .card-title {
+    font-size: 0.82rem !important;
+    margin-bottom: 4px !important;
+    height: 2.3em; /* Keep uniform alignment */
+    overflow: hidden;
+  }
+
+  .card-desc {
+    display: none !important; /* Completely hide long desc blocks on mobile grids */
+  }
+
+  .price-label {
+    font-size: 0.58rem !important;
+  }
+
+  .price-val {
+    font-size: 0.92rem !important;
+  }
+
+  .card-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+  }
+
+  .card-action-btn svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .category-pill {
+    padding: 6px 14px !important;
+    font-size: 0.78rem !important;
+  }
+}
+

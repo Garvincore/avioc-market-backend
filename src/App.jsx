@@ -11,7 +11,6 @@ import ProductDetail from './components/ProductDetail';
 import SellerDashboard from './components/SellerDashboard';
 
 // Mock Data
-import { SHOPS, PRODUCTS, VIDEOS } from './mockData';
 import { apiService } from './services/api';
 import { ShieldAlert } from 'lucide-react';
 
@@ -31,9 +30,9 @@ export default function App() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
   // Stateful Data
-  const [productsList, setProductsList] = useState(PRODUCTS);
-  const [videosList, setVideosList] = useState(VIDEOS);
-  const [shopsList, setShopsList] = useState(SHOPS);
+  const [productsList, setProductsList] = useState([]);
+  const [videosList, setVideosList] = useState([]);
+  const [shopsList, setShopsList] = useState([]);
   const [cartItems, setCartItems] = useState([]);
 
   // Authentication State
@@ -309,6 +308,10 @@ export default function App() {
         currentRole={currentRole}
         onLogout={handleLogout}
         onOpenAuth={() => setIsAuthOpen(true)}
+        isCartOpen={isCartOpen}
+        setIsCartOpen={setIsCartOpen}
+        isDashboardOpen={isDashboardOpen}
+        setIsDashboardOpen={setIsDashboardOpen}
       />
 
       {/* Warning Banner */}
