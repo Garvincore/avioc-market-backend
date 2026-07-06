@@ -23,7 +23,7 @@ export default function ShopProfile({
 
   // Construct WhatsApp pre-filled link
   const whatsappMsg = encodeURIComponent(
-    `Hello ${shop.name}! I saw your shop profile on Omweso. I would like to inquire about your listings.`
+    `Hello ${shop.name}! I saw your shop profile on Avioc Market. I would like to inquire about your listings.`
   );
   const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 

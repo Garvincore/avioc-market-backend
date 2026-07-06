@@ -29,8 +29,12 @@ export default function ProductDetail({
   const originalPrice = Math.floor(product.price * 1.2 / 500) * 500;
 
   // Prefilled WhatsApp link
+  const inquiryAction = product.type === 'service' ? 'would like to book it.' : 'would like to buy it.';
+  const imageSuffix = (product.image && !product.image.startsWith('data:image/')) 
+    ? `\n\nProduct Photo: ${product.image}` 
+    : '';
   const whatsappMsg = encodeURIComponent(
-    `Hello ${shop.name}! I saw "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market and would like to buy it.`
+    `Hello ${shop.name}! I saw "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market and ${inquiryAction}${imageSuffix}`
   );
   const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 

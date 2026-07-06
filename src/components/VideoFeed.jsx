@@ -255,8 +255,12 @@ export default function VideoFeed({
           const commentsCount = dynamicCommentsCount[vid.id] !== undefined ? dynamicCommentsCount[vid.id] : (vid.commentsList?.length || vid.comments || 0);
 
           // Construct pre-filled WhatsApp message
+          const inquiryAction = product.type === 'service' ? 'I want to book.' : 'Is it still available?';
+          const imageSuffix = (product.image && !product.image.startsWith('data:image/')) 
+            ? `\n\nProduct Photo: ${product.image}` 
+            : '';
           const whatsappMsg = encodeURIComponent(
-            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Omweso. Is it still available?`
+            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}${imageSuffix}`
           );
           const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 
