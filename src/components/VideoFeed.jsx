@@ -121,7 +121,7 @@ export default function VideoFeed({
                   // Mount video/iframe player only when card is snapped active
                   vid.videoSrc.includes('mediadelivery.net') ? (
                     <iframe
-                      src={`${embedUrl}?autoplay=true&loop=true&muted=true&preload=true&controls=false`}
+                      src={`${embedUrl}?autoplay=true&loop=true&muted=false&preload=true&controls=false`}
                       loading="lazy"
                       style={{
                         border: 'none',
@@ -141,7 +141,6 @@ export default function VideoFeed({
                       className="video-player-element"
                       src={vid.videoSrc}
                       loop
-                      muted
                       autoPlay
                       playsInline
                       poster={vid.imageFallback}
