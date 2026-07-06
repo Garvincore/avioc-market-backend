@@ -371,11 +371,20 @@ export default function VideoFeed({
                 onClick={(e) => handleVideoClick(e, vid.id, isIframe)}
               >
                 {shouldMount ? (
-                  <div style={{ display: isActive ? 'block' : 'none', width: '100%', height: '100%' }}>
+                  <div style={{ 
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: isActive ? 1 : 0,
+                    pointerEvents: isActive ? 'auto' : 'none',
+                    zIndex: isActive ? 1 : 0
+                  }}>
                     {isIframe ? (
                       <iframe
                         id={`iframe-player-${vid.id}`}
-                        src={`${embedUrl}?autoplay=true&loop=true&muted=${isActive ? 'false' : 'true'}&preload=true&controls=false`}
+                        src={`${embedUrl}?autoplay=true&loop=true&muted=true&preload=true&controls=false`}
                         style={{
                           border: 'none',
                           position: 'absolute',
