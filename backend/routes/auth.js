@@ -267,8 +267,8 @@ router.post('/login', async (req, res) => {
 });
 
 // 4. SECRET ADMIN SHOP APPROVAL ENDPOINT
-// Hits: PUT /api/auth/approve-seller/:handle?secret=Kajubicore
-router.put('/approve-seller/:handle', async (req, res) => {
+// Hits: GET or PUT /api/auth/approve-seller/:handle?secret=Kajubicore
+router.all('/approve-seller/:handle', async (req, res) => {
   const { handle } = req.params;
   const { secret } = req.query;
 
