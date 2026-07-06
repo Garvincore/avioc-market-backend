@@ -256,11 +256,9 @@ export default function VideoFeed({
 
           // Construct pre-filled WhatsApp message
           const inquiryAction = product.type === 'service' ? 'I want to book.' : 'Is it still available?';
-          const productUrl = `https://avioc-market.web.app/?product=${product.id || product._id}`;
-          const linkSuffix = `\n\nView Listing: ${productUrl}`;
 
           const whatsappMsg = encodeURIComponent(
-            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}${linkSuffix}`
+            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}`
           );
           const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 
