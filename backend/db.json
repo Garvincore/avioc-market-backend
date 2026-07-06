@@ -6,6 +6,14 @@
       "email": "john@gmail.com",
       "password_hash": "$2a$10$7Z2z1m5w7o8ugandaMockPasswordHashValueHere",
       "phone_number": "0772000000"
+    },
+    {
+      "id": "u_bbxj0hof3_1783300721213",
+      "name": "Garvin Core",
+      "email": "garvincore2@gmail.com",
+      "password_hash": "$2a$10$.dIkqbwTK8SuyPOitLQIsuJnIVCoj94AjYVgz65o1pLob47xiXwNK",
+      "phone_number": "0748067757",
+      "created_at": "2026-07-06T01:18:41.213Z"
     }
   ],
   "shops": [
@@ -93,6 +101,24 @@
       "likes_count": 94600,
       "rating": 4.7,
       "is_verified": true
+    },
+    {
+      "id": "u_ykqtrq8ol_1783300914947",
+      "name": "Avioc media",
+      "handle": "aviocshots",
+      "email": "garvincore2@gmail.com",
+      "password_hash": "$2a$10$IaxnwMfeHuIorUp7vqkPmOu0ld/ieu//yJCMbd4ZMUSJklz.0NvYe",
+      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80",
+      "bio": "event coverage",
+      "location": "Kampala",
+      "whatsapp_number": "0748067747",
+      "business_reg_no": "Core",
+      "status": "pending",
+      "followers_count": 0,
+      "likes_count": 0,
+      "rating": 5,
+      "is_verified": false,
+      "created_at": "2026-07-06T01:21:54.947Z"
     }
   ],
   "listings": [
@@ -141,7 +167,7 @@
       "image_url": "https://images.unsplash.com/photo-1530866495561-507c9faab2ed?w=500&auto=format&fit=crop&q=80",
       "description": "Conquer the famous rapids of the River Nile. Includes professional guides, safety gear, BBQ buffet at the rapids, and free transport from Kampala.",
       "category": "Tours & Travel",
-      "rating": 5.0,
+      "rating": 5,
       "reviews_count": 215
     },
     {
@@ -179,7 +205,11 @@
       "likes_count": 4200,
       "comments_count": 328,
       "shares_count": 185,
-      "tags": ["Rolex", "KampalaStreetFood", "UgandaEats"]
+      "tags": [
+        "Rolex",
+        "KampalaStreetFood",
+        "UgandaEats"
+      ]
     },
     {
       "id": "vid_2",
@@ -190,7 +220,11 @@
       "likes_count": 8900,
       "comments_count": 512,
       "shares_count": 412,
-      "tags": ["Kikoyi", "UgandanFashion", "Kwanjula"]
+      "tags": [
+        "Kikoyi",
+        "UgandanFashion",
+        "Kwanjula"
+      ]
     },
     {
       "id": "vid_3",
@@ -201,7 +235,11 @@
       "likes_count": 15400,
       "comments_count": 845,
       "shares_count": 1200,
-      "tags": ["Jinja", "NileRafting", "VisitUganda"]
+      "tags": [
+        "Jinja",
+        "NileRafting",
+        "VisitUganda"
+      ]
     },
     {
       "id": "vid_4",
@@ -212,7 +250,11 @@
       "likes_count": 6700,
       "comments_count": 244,
       "shares_count": 98,
-      "tags": ["KnotlessBraids", "NtindaSalons", "KampalaBeauty"]
+      "tags": [
+        "KnotlessBraids",
+        "NtindaSalons",
+        "KampalaBeauty"
+      ]
     }
   ],
   "orders": [

@@ -349,7 +349,7 @@ export default function App() {
       {/* Upload Modal */}
       {isUploadOpen && (
         <CreatePostModal 
-          shops={shopsList} 
+          currentUser={currentUser} 
           onClose={() => setIsUploadOpen(false)} 
           onAddListing={handleAddListing}
         />
