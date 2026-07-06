@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Heart, MessageCircle, Share2, MessageSquare, CheckCircle2, ShoppingCart, Calendar } from 'lucide-react';
 
 export default function VideoFeed({ 
@@ -11,7 +11,43 @@ export default function VideoFeed({
 }) {
   const [likesState, setLikesState] = useState({});
   const [hearts, setHearts] = useState([]); // [{id, x, y}] for floating animation
+  const [activeVideoId, setActiveVideoId] = useState(null);
   const containerRef = useRef(null);
+  const cardRefs = useRef({});
+
+  // 1. Setup IntersectionObserver to track the active snapped video card in viewport
+  useEffect(() => {
+    if (videos.length > 0 && !activeVideoId) {
+      setActiveVideoId(videos[0].id);
+    }
+
+    const observerOptions = {
+      root: containerRef.current,
+      rootMargin: '0px',
+      threshold: 0.6 // Card must be at least 60% visible to play
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const videoId = entry.target.dataset.videoid;
+          setActiveVideoId(videoId);
+        }
+      });
+    }, observerOptions);
+
+    // Observe each video card element
+    const currentRefs = cardRefs.current;
+    Object.values(currentRefs).forEach(el => {
+      if (el) observer.observe(el);
+    });
+
+    return () => {
+      Object.values(currentRefs).forEach(el => {
+        if (el) observer.unobserve(el);
+      });
+    };
+  }, [videos, activeVideoId]);
 
   // Handle like toggle
   const handleLike = (videoId) => {
@@ -27,27 +63,22 @@ export default function VideoFeed({
     const x = e.clientX - containerRect.left;
     const y = e.clientY - containerRect.top;
 
-    // Trigger like if not liked already
     if (!likesState[videoId]) {
       handleLike(videoId);
     }
 
-    // Add heart to animation array
     const newHeart = { id: Date.now(), x, y };
     setHearts(prev => [...prev, newHeart]);
 
-    // Clean up heart after animation ends
     setTimeout(() => {
       setHearts(prev => prev.filter(h => h.id !== newHeart.id));
     }, 1000);
   };
 
-  // Mock share function
   const handleShare = (videoId) => {
     alert("Listing link copied! Share with your friends on WhatsApp or Facebook. 🇺🇬");
   };
 
-  // Mock comment interaction
   const handleComment = (videoId) => {
     alert("Comments on Omweso are direct! Ask the seller anything by clicking the green WhatsApp button.");
   };
@@ -59,6 +90,7 @@ export default function VideoFeed({
           const shop = shops.find(s => s.id === vid.shopId) || {};
           const product = products.find(p => p.id === vid.productId) || {};
           const isLiked = !!likesState[vid.id];
+          const isActive = activeVideoId === vid.id;
 
           // Construct pre-filled WhatsApp message
           const whatsappMsg = encodeURIComponent(
@@ -66,40 +98,82 @@ export default function VideoFeed({
           );
           const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 
+          // Defensive URL translation: convert /play/ to /embed/ for borderless scaling
+          const embedUrl = vid.videoSrc
+            .replace('/play/', '/embed/')
+            .replace('/play?', '/embed?');
+
           return (
-            <div key={vid.id} id={`video-card-${vid.id}`} className="video-card-container">
+            <div 
+              key={vid.id} 
+              id={`video-card-${vid.id}`} 
+              data-videoid={vid.id}
+              ref={el => cardRefs.current[vid.id] = el}
+              className="video-card-container"
+            >
               {/* Main Media Player area */}
               <div 
                 className="video-player-element"
-                style={{ position: 'relative', width: '100%', height: '100%' }}
+                style={{ position: 'relative', width: '100%', height: '100%', background: '#000', overflow: 'hidden' }}
                 onDoubleClick={(e) => handleDoubleTap(e, vid.id)}
               >
-                {vid.videoSrc.includes('mediadelivery.net') ? (
-                  <iframe
-                    src={`${vid.videoSrc}?autoplay=true&loop=true&muted=true&preload=true`}
-                    loading="lazy"
-                    style={{
-                      border: 'none',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '16px'
-                    }}
-                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                    allowFullScreen={true}
-                  />
+                {isActive ? (
+                  // Mount video/iframe player only when card is snapped active
+                  vid.videoSrc.includes('mediadelivery.net') ? (
+                    <iframe
+                      src={`${embedUrl}?autoplay=true&loop=true&muted=true&preload=true&controls=false`}
+                      loading="lazy"
+                      style={{
+                        border: 'none',
+                        position: 'absolute',
+                        top: '-5%',
+                        left: '-5%',
+                        width: '110%',
+                        height: '110%', // over-scale slightly to completely crop out any remaining black bars
+                        borderRadius: '16px',
+                        pointerEvents: 'none' // intercepts taps for double-clicking likes
+                      }}
+                      allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                      allowFullScreen={true}
+                    />
+                  ) : (
+                    <video
+                      className="video-player-element"
+                      src={vid.videoSrc}
+                      loop
+                      muted
+                      autoPlay
+                      playsInline
+                      poster={vid.imageFallback}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  )
                 ) : (
-                  <video
-                    className="video-player-element"
-                    src={vid.videoSrc}
-                    loop
-                    muted
-                    autoPlay
-                    playsInline
-                    poster={vid.imageFallback}
-                  />
+                  // Unmounted/Static state: Show cover photo poster only (saves bandwidth & CPU)
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <img 
+                      src={vid.imageFallback || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500'} 
+                      alt="Cover" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      top: '50%',
+                      left: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      background: 'rgba(0,0,0,0.6)',
+                      borderRadius: '50%',
+                      width: '64px',
+                      height: '64px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      pointerEvents: 'none'
+                    }}>
+                      <span style={{ fontSize: '1.8rem', marginLeft: '6px' }}>▶</span>
+                    </div>
+                  </div>
                 )}
                 
                 {/* Visual indicator for tapping instruction */}
