@@ -169,5 +169,15 @@ export const apiService = {
       console.error('Failed to update order status:', err);
       throw err;
     }
+  },
+
+  postComment: async (videoId, commentData) => {
+    try {
+      const response = await axios.post(`${API_URL}/listings/video/${videoId}/comments`, commentData);
+      return response.data;
+    } catch (err) {
+      console.error('Failed to save listing comment:', err);
+      throw err;
+    }
   }
 };

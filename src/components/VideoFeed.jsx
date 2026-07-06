@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MessageSquare, CheckCircle2, ShoppingCart, Calendar } from 'lucide-react';
+import { Heart, MessageCircle, Share2, MessageSquare, CheckCircle2, ShoppingCart, Calendar, X } from 'lucide-react';
+import { apiService } from '../services/api';
 
 export default function VideoFeed({ 
   videos, 
@@ -7,11 +8,24 @@ export default function VideoFeed({
   products, 
   onViewShop, 
   onAddToCart,
-  onSelectProduct
+  onSelectProduct,
+  currentUser,
+  onOpenAuth
 }) {
   const [likesState, setLikesState] = useState({});
   const [hearts, setHearts] = useState([]); // [{id, x, y}] for floating animation
   const [activeVideoId, setActiveVideoId] = useState(null);
+  
+  // Play / Pause States
+  const [pausedStates, setPausedStates] = useState({});
+  const clickTimeoutRef = useRef({});
+  
+  // Comments Drawer States
+  const [activeCommentsVideo, setActiveCommentsVideo] = useState(null);
+  const [localComments, setLocalComments] = useState([]);
+  const [commentText, setCommentText] = useState('');
+  const [dynamicCommentsCount, setDynamicCommentsCount] = useState({});
+
   const containerRef = useRef(null);
   const cardRefs = useRef({});
 
@@ -32,11 +46,16 @@ export default function VideoFeed({
         if (entry.isIntersecting) {
           const videoId = entry.target.dataset.videoid;
           setActiveVideoId(videoId);
+          // Auto-resume play states when snapping to new active cards
+          setPausedStates(prev => {
+            const next = { ...prev };
+            delete next[videoId]; // make sure it's playing
+            return next;
+          });
         }
       });
     }, observerOptions);
 
-    // Observe each video card element
     const currentRefs = cardRefs.current;
     Object.values(currentRefs).forEach(el => {
       if (el) observer.observe(el);
@@ -48,6 +67,71 @@ export default function VideoFeed({
       });
     };
   }, [videos, activeVideoId]);
+
+  // Load comments list when comments drawer is opened
+  useEffect(() => {
+    if (activeCommentsVideo) {
+      setLocalComments(activeCommentsVideo.commentsList || []);
+    } else {
+      setLocalComments([]);
+    }
+  }, [activeCommentsVideo]);
+
+  // Handle Play/Pause Single Tap Coalescing
+  const handleVideoClick = (e, videoId, isIframe) => {
+    e.stopPropagation();
+    
+    if (clickTimeoutRef.current[videoId]) {
+      // It's a double tap (like)
+      clearTimeout(clickTimeoutRef.current[videoId]);
+      clickTimeoutRef.current[videoId] = null;
+      handleDoubleTap(e, videoId);
+    } else {
+      // It's a single tap (play/pause toggle)
+      const eventCopy = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        currentTarget: e.currentTarget
+      };
+      clickTimeoutRef.current[videoId] = setTimeout(() => {
+        clickTimeoutRef.current[videoId] = null;
+        togglePlayPause(videoId, isIframe);
+      }, 250);
+    }
+  };
+
+  const togglePlayPause = (videoId, isIframe) => {
+    const isCurrentlyPaused = !!pausedStates[videoId];
+    const nextPausedState = !isCurrentlyPaused;
+
+    setPausedStates(prev => ({
+      ...prev,
+      [videoId]: nextPausedState
+    }));
+
+    if (isIframe) {
+      const iframe = document.querySelector(`#iframe-player-${videoId}`);
+      if (iframe && iframe.contentWindow) {
+        const action = nextPausedState ? 'pause' : 'play';
+        const message = JSON.stringify({
+          context: 'player.js',
+          version: '0.0.10',
+          event: action,
+          value: ''
+        });
+        iframe.contentWindow.postMessage(message, '*');
+      }
+    } else {
+      const video = document.querySelector(`#video-player-${videoId}`);
+      if (video) {
+        if (nextPausedState) {
+          video.pause();
+        } else {
+          video.play().catch(() => {});
+        }
+      }
+    }
+  };
 
   // Handle like toggle
   const handleLike = (videoId) => {
@@ -79,8 +163,35 @@ export default function VideoFeed({
     alert("Listing link copied! Share with your friends on WhatsApp or Facebook. 🇺🇬");
   };
 
-  const handleComment = (videoId) => {
-    alert("Comments on Omweso are direct! Ask the seller anything by clicking the green WhatsApp button.");
+  const handlePostCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!currentUser) {
+      onOpenAuth();
+      return;
+    }
+    if (!commentText.trim()) return;
+
+    try {
+      const role = localStorage.getItem('avioc_role') || 'user';
+      const response = await apiService.postComment(activeCommentsVideo.id, {
+        userId: currentUser.id || currentUser.id,
+        userName: currentUser.name,
+        userRole: role,
+        text: commentText
+      });
+
+      if (response.comment) {
+        setLocalComments(prev => [...prev, response.comment]);
+        setDynamicCommentsCount(prev => ({
+          ...prev,
+          [activeCommentsVideo.id]: response.commentsCount
+        }));
+        setCommentText('');
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit comment. Please check your network and try again.");
+    }
   };
 
   return (
@@ -91,6 +202,9 @@ export default function VideoFeed({
           const product = products.find(p => p.id === vid.productId) || {};
           const isLiked = !!likesState[vid.id];
           const isActive = activeVideoId === vid.id;
+          const isPaused = !!pausedStates[vid.id];
+          const isIframe = vid.videoSrc.includes('mediadelivery.net');
+          const commentsCount = dynamicCommentsCount[vid.id] !== undefined ? dynamicCommentsCount[vid.id] : (vid.commentsList?.length || vid.comments || 0);
 
           // Construct pre-filled WhatsApp message
           const whatsappMsg = encodeURIComponent(
@@ -114,13 +228,14 @@ export default function VideoFeed({
               {/* Main Media Player area */}
               <div 
                 className="video-player-element"
-                style={{ position: 'relative', width: '100%', height: '100%', background: '#000', overflow: 'hidden' }}
-                onDoubleClick={(e) => handleDoubleTap(e, vid.id)}
+                style={{ position: 'relative', width: '100%', height: '100%', background: '#000', overflow: 'hidden', cursor: 'pointer' }}
+                onClick={(e) => handleVideoClick(e, vid.id, isIframe)}
               >
                 {isActive ? (
                   // Mount video/iframe player only when card is snapped active
-                  vid.videoSrc.includes('mediadelivery.net') ? (
+                  isIframe ? (
                     <iframe
+                      id={`iframe-player-${vid.id}`}
                       src={`${embedUrl}?autoplay=true&loop=true&muted=false&preload=true&controls=false`}
                       loading="lazy"
                       style={{
@@ -131,13 +246,14 @@ export default function VideoFeed({
                         width: '110%',
                         height: '110%', // over-scale slightly to completely crop out any remaining black bars
                         borderRadius: '16px',
-                        pointerEvents: 'none' // intercepts taps for double-clicking likes
+                        pointerEvents: 'none' // lets clicks pass through to our single/double-tap click handler
                       }}
                       allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                       allowFullScreen={true}
                     />
                   ) : (
                     <video
+                      id={`video-player-${vid.id}`}
                       className="video-player-element"
                       src={vid.videoSrc}
                       loop
@@ -174,6 +290,28 @@ export default function VideoFeed({
                     </div>
                   </div>
                 )}
+
+                {/* Paused Overlay Indicator */}
+                {isActive && isPaused && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.65)',
+                    borderRadius: '50%',
+                    width: '64px',
+                    height: '64px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    pointerEvents: 'none',
+                    zIndex: 10
+                  }}>
+                    <span style={{ fontSize: '1.8rem', marginLeft: '6px' }}>▶</span>
+                  </div>
+                )}
                 
                 {/* Visual indicator for tapping instruction */}
                 <div style={{
@@ -189,7 +327,7 @@ export default function VideoFeed({
                   pointerEvents: 'none',
                   zIndex: 5
                 }}>
-                  Double-tap to like 💖
+                  Double-tap to like 💖 | Tap to play/pause
                 </div>
               </div>
 
@@ -336,12 +474,12 @@ export default function VideoFeed({
                 <div className="action-icon-wrapper">
                   <button 
                     className="action-btn"
-                    onClick={() => handleComment(vid.id)}
+                    onClick={() => setActiveCommentsVideo(vid)}
                     aria-label="Comments"
                   >
                     <MessageCircle size={22} />
                   </button>
-                  <span className="action-label">{vid.comments}</span>
+                  <span className="action-label">{commentsCount}</span>
                 </div>
 
                 {/* Direct WhatsApp Action */}
@@ -374,6 +512,114 @@ export default function VideoFeed({
           );
         })}
       </div>
+
+      {/* Persistent Bottom Comments Drawer (TikTok Style) */}
+      {activeCommentsVideo && (
+        <div className="modal-overlay" onClick={() => setActiveCommentsVideo(null)} style={{ zIndex: 100 }}>
+          <div 
+            className="comments-drawer glass" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%',
+              maxWidth: '500px',
+              height: '65vh',
+              background: 'var(--bg-primary)',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              borderTop: '1.5px solid var(--border-glass)',
+              padding: '20px',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 -8px 32px rgba(0,0,0,0.5)'
+            }}
+          >
+            {/* Drawer Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>
+                Comments ({localComments.length})
+              </h3>
+              <button 
+                onClick={() => setActiveCommentsVideo(null)} 
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Close comments"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Comments List */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingBottom: '12px', scrollbarWidth: 'none' }}>
+              {localComments.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', marginTop: '40px', fontSize: '0.9rem' }}>
+                  No comments yet. Be the first to ask the seller! 💬
+                </div>
+              ) : (
+                localComments.map((c, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '10px' }}>
+                    <div style={{ 
+                      background: c.userRole === 'seller' ? 'var(--color-emerald)' : 'rgba(255,255,255,0.1)', 
+                      color: c.userRole === 'seller' ? '#000' : 'white', 
+                      borderRadius: '50%', 
+                      width: '32px', 
+                      height: '32px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      fontSize: '0.8rem', 
+                      fontWeight: '800', 
+                      flexShrink: 0 
+                    }}>
+                      {(c.userName || 'U').substring(0, 1).toUpperCase()}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: '700', fontSize: '0.85rem' }}>{c.userName}</span>
+                        {c.userRole === 'seller' && (
+                          <span style={{ background: 'rgba(228, 203, 171, 0.15)', color: 'var(--color-emerald)', fontSize: '0.65rem', padding: '1px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                            SELLER
+                          </span>
+                        )}
+                        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                          {new Date(c.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.4', margin: 0 }}>
+                        {c.text}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Comment Form */}
+            <form onSubmit={handlePostCommentSubmit} style={{ display: 'flex', gap: '10px', borderTop: '1.5px solid var(--border-glass)', paddingTop: '12px', marginTop: 'auto' }}>
+              <input 
+                type="text" 
+                placeholder={currentUser ? "Ask seller about size, delivery..." : "Sign in to leave a comment..."} 
+                disabled={!currentUser}
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                className="form-input"
+                style={{ flex: 1, margin: 0, height: '42px', background: 'var(--bg-secondary)', color: 'white' }}
+                required
+              />
+              <button 
+                type="submit" 
+                disabled={!currentUser}
+                className="checkout-btn" 
+                style={{ margin: 0, width: 'auto', padding: '0 20px', height: '42px', background: 'var(--color-emerald)', color: '#000', fontWeight: '700' }}
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -335,6 +335,8 @@ export default function App() {
             onViewShop={setActiveShopId} 
             onAddToCart={handleAddToCart}
             onSelectProduct={setActiveProductDetail} // Intercept feed clicks to show details
+            currentUser={currentUser}
+            onOpenAuth={() => setIsAuthOpen(true)}
           />
         ) : (
           <ProductGrid 

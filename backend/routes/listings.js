@@ -47,13 +47,14 @@ router.get('/', async (req, res) => {
               id: v._id,
               shopId: shop._id,
               productId: listing ? listing._id : null,
-              videoSrc: `https://iframe.mediadelivery.net/play/${BUNNY_LIBRARY_ID}/${v.bunnyVideoId}`,
+              videoSrc: `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${v.bunnyVideoId}`,
               imageFallback: listing ? listing.imageUrl : '',
               caption: v.caption,
               likes: v.likesCount,
               comments: v.commentsCount,
               shares: v.sharesCount,
-              tags: v.tags || []
+              tags: v.tags || [],
+              commentsList: v.comments || []
             },
             shop: {
               id: shop._id,
@@ -102,13 +103,14 @@ router.get('/', async (req, res) => {
         id: row.video_id,
         shopId: row.shop_id,
         productId: row.product_id,
-        videoSrc: `https://iframe.mediadelivery.net/play/${BUNNY_LIBRARY_ID}/${row.bunny_video_id}`,
+        videoSrc: `https://iframe.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${row.bunny_video_id}`,
         imageFallback: row.product_image,
         caption: row.caption,
         likes: row.video_likes,
         comments: row.video_comments,
         shares: row.video_shares,
-        tags: row.tags || []
+        tags: row.tags || [],
+        commentsList: []
       },
       shop: {
         id: row.shop_id,
@@ -301,6 +303,52 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error deleting listing:', err);
     res.status(500).json({ error: "Failed to delete listing." });
+  }
+});
+
+// 5. POST COMMENT TO A VIDEO
+// Hits: POST /api/listings/video/:id/comments
+router.post('/video/:id/comments', async (req, res) => {
+  const { id } = req.params;
+  const { userId, userName, userRole, text } = req.body;
+
+  if (!userId || !userName || !text) {
+    return res.status(400).json({ error: "Missing required comment parameters." });
+  }
+
+  try {
+    if (db.isMongo) {
+      const video = await Video.findById(id);
+      if (!video) return res.status(404).json({ error: "Video listing not found." });
+
+      const newComment = {
+        userId,
+        userName,
+        userRole: userRole || 'user',
+        text,
+        createdAt: new Date()
+      };
+
+      video.comments.push(newComment);
+      video.commentsCount = video.comments.length;
+      await video.save();
+
+      return res.status(201).json({ 
+        message: "Comment added successfully!", 
+        comment: video.comments[video.comments.length - 1],
+        commentsCount: video.commentsCount
+      });
+    }
+
+    // SQL Fallback
+    res.status(201).json({ 
+      message: "Comment added successfully (local fallback)!", 
+      comment: { userId, userName, userRole, text, createdAt: new Date() },
+      commentsCount: 1
+    });
+  } catch (err) {
+    console.error("Error saving comment:", err.message);
+    res.status(500).json({ error: "Failed to post comment." });
   }
 });
 
