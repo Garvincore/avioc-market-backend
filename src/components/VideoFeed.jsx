@@ -29,6 +29,7 @@ export default function VideoFeed({
   
   // Comments & Likes counts
   const [activeCommentsVideo, setActiveCommentsVideo] = useState(null);
+  const [activeShareVideo, setActiveShareVideo] = useState(null);
   const [localComments, setLocalComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [dynamicCommentsCount, setDynamicCommentsCount] = useState({});
@@ -291,8 +292,8 @@ export default function VideoFeed({
     }, 1000);
   };
 
-  const handleShare = (videoId) => {
-    alert("Listing link copied! Share with your friends on WhatsApp or Facebook. 🇺🇬");
+  const handleShare = (videoId, product) => {
+    setActiveShareVideo({ videoId, product });
   };
 
   const handlePostCommentSubmit = async (e) => {
@@ -641,7 +642,7 @@ export default function VideoFeed({
                 <div className="action-icon-wrapper">
                   <button 
                     className="action-btn"
-                    onClick={() => handleShare(vid.id)}
+                    onClick={() => handleShare(vid.id, product)}
                     aria-label="Share listing"
                   >
                     <Share2 size={22} />
@@ -741,6 +742,126 @@ export default function VideoFeed({
                 Send
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Persistent Bottom Share Drawer (TikTok Style) */}
+      {activeShareVideo && (
+        <div className="modal-overlay" onClick={() => setActiveShareVideo(null)} style={{ zIndex: 1200 }}>
+          <div 
+            className="comments-drawer glass" 
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'fixed',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '100%',
+              maxWidth: '500px',
+              height: 'auto',
+              maxHeight: '40vh',
+              background: 'var(--bg-primary)',
+              borderTopLeftRadius: '24px',
+              borderTopRightRadius: '24px',
+              borderTop: '1.5px solid var(--border-glass)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+              boxShadow: '0 -8px 32px rgba(0,0,0,0.5)',
+              bottom: window.innerWidth <= 768 ? '64px' : '0'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0 }}>Send to</h3>
+              <button 
+                onClick={() => setActiveShareVideo(null)}
+                style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                aria-label="Close share sheet"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', textAlign: 'center', padding: '10px 0' }}>
+              {/* WhatsApp Share */}
+              <div 
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                onClick={() => {
+                  const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out "${activeShareVideo.product.title}" on Avioc Market! 🇺🇬\n\nView listing here: https://avioc-market.web.app/?product=${activeShareVideo.product.id || activeShareVideo.product._id}`)}`;
+                  window.open(url, '_blank');
+                  setActiveShareVideo(null);
+                }}
+              >
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto' }}>
+                  <MessageSquare size={22} />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>WhatsApp</span>
+              </div>
+
+              {/* Copy Link */}
+              <div 
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                onClick={async () => {
+                  const link = `https://avioc-market.web.app/?product=${activeShareVideo.product.id || activeShareVideo.product._id}`;
+                  try {
+                    await navigator.clipboard.writeText(link);
+                    alert("Listing link copied to clipboard! 📋");
+                  } catch (err) {
+                    alert("Failed to copy link. Link: " + link);
+                  }
+                  setActiveShareVideo(null);
+                }}
+              >
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto' }}>
+                  <Share2 size={20} />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Copy Link</span>
+              </div>
+
+              {/* Facebook Share */}
+              <div 
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                onClick={() => {
+                  const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`https://avioc-market.web.app/?product=${activeShareVideo.product.id || activeShareVideo.product._id}`)}`;
+                  window.open(url, '_blank');
+                  setActiveShareVideo(null);
+                }}
+              >
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#1877F2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto' }}>
+                  <span style={{ fontWeight: '800', fontSize: '1.3rem' }}>f</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Facebook</span>
+              </div>
+
+              {/* Native System Share */}
+              <div 
+                style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}
+                onClick={async () => {
+                  const shareUrl = `https://avioc-market.web.app/?product=${activeShareVideo.product.id || activeShareVideo.product._id}`;
+                  const shareText = `Check out "${activeShareVideo.product.title}" on Avioc Market! 🇺🇬`;
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({
+                        title: activeShareVideo.product.title,
+                        text: shareText,
+                        url: shareUrl
+                      });
+                    } catch (err) {
+                      console.log(err);
+                    }
+                  } else {
+                    alert("System sharing not supported on this browser. Please use Copy Link or WhatsApp options!");
+                  }
+                  setActiveShareVideo(null);
+                }}
+              >
+                <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', border: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', margin: '0 auto' }}>
+                  <Share2 size={18} style={{ transform: 'rotate(-45deg)' }} />
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>More</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
