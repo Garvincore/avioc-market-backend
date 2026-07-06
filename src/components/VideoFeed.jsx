@@ -367,7 +367,7 @@ export default function VideoFeed({
                     {isIframe ? (
                       <iframe
                         id={`iframe-player-${vid.id}`}
-                        src={`${embedUrl}?autoplay=false&loop=true&muted=false&preload=true&controls=false`}
+                        src={`${embedUrl}?autoplay=${isActive ? 'true' : 'false'}&loop=true&muted=false&preload=true&controls=false`}
                         style={{
                           border: 'none',
                           position: 'absolute',
@@ -387,6 +387,7 @@ export default function VideoFeed({
                         className="video-player-element"
                         src={vid.videoSrc}
                         loop
+                        autoPlay={isActive}
                         muted={false}
                         preload="auto"
                         playsInline
