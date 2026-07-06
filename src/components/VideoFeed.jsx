@@ -124,18 +124,26 @@ export default function VideoFeed({
               value: 0
             }), '*');
 
-            // Force unmute and full volume on active player to override phone browser silencing
+            // Force unmute and full volume on active player to override browser and cookie volume limits
+            const volumeTargets = [
+              { context: 'player.js', method: 'setVolume', value: 1 },
+              { context: 'player.js', method: 'volume', value: 1 },
+              { method: 'setVolume', value: 1 },
+              { method: 'volume', value: 1 },
+              { method: 'volume', value: '1' },
+              { event: 'command', func: 'setVolume', args: [1] }
+            ];
+            volumeTargets.forEach(target => {
+              try {
+                iframe.contentWindow.postMessage(JSON.stringify(target), '*');
+              } catch (e) {}
+            });
+
             iframe.contentWindow.postMessage(JSON.stringify({
               context: 'player.js',
-              method: 'setVolume',
-              value: 1
+              method: 'unmute'
             }), '*');
             iframe.contentWindow.postMessage(JSON.stringify({
-              method: 'setVolume',
-              value: 1
-            }), '*');
-            iframe.contentWindow.postMessage(JSON.stringify({
-              context: 'player.js',
               method: 'unmute'
             }), '*');
           }
@@ -174,16 +182,21 @@ export default function VideoFeed({
   const handleIframeLoad = (videoId) => {
     const iframe = document.querySelector(`#iframe-player-${videoId}`);
     if (iframe && iframe.contentWindow) {
-      // Set volume to 1 (full volume) to bypass saved cookie volume states
-      iframe.contentWindow.postMessage(JSON.stringify({
-        context: 'player.js',
-        method: 'setVolume',
-        value: 1
-      }), '*');
-      iframe.contentWindow.postMessage(JSON.stringify({
-        method: 'setVolume',
-        value: 1
-      }), '*');
+      // Set volume to 1 (full volume) to bypass saved cookie/browser volume states
+      const volumeTargets = [
+        { context: 'player.js', method: 'setVolume', value: 1 },
+        { context: 'player.js', method: 'volume', value: 1 },
+        { method: 'setVolume', value: 1 },
+        { method: 'volume', value: 1 },
+        { method: 'volume', value: '1' },
+        { event: 'command', func: 'setVolume', args: [1] }
+      ];
+      volumeTargets.forEach(target => {
+        try {
+          iframe.contentWindow.postMessage(JSON.stringify(target), '*');
+        } catch (e) {}
+      });
+
       iframe.contentWindow.postMessage(JSON.stringify({
         context: 'player.js',
         method: 'unmute'
@@ -417,7 +430,7 @@ export default function VideoFeed({
                     {isIframe ? (
                       <iframe
                         id={`iframe-player-${vid.id}`}
-                        src={`${embedUrl}?autoplay=${isActive ? 'true' : 'false'}&loop=true&muted=false&preload=true&controls=false`}
+                        src={`${embedUrl}?autoplay=${isActive ? 'true' : 'false'}&loop=true&muted=false&preload=true&controls=false&volume=1`}
                         onLoad={() => handleIframeLoad(vid.id)}
                         style={{
                           border: 'none',
