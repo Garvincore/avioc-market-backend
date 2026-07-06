@@ -124,22 +124,6 @@ export default function VideoFeed({
               value: 0
             }), '*');
           }
-
-          // Send volume postMessage rules (unmute if active, mute if hidden/adjacent)
-          const volumeVal = (isActive && !isPaused) ? 1 : 0;
-          iframe.contentWindow.postMessage(JSON.stringify({
-            context: 'player.js',
-            method: 'setVolume',
-            value: volumeVal
-          }), '*');
-          iframe.contentWindow.postMessage(JSON.stringify({
-            method: 'setVolume',
-            value: volumeVal
-          }), '*');
-          iframe.contentWindow.postMessage(JSON.stringify({
-            context: 'player.js',
-            method: isActive && !isPaused ? 'unmute' : 'mute'
-          }), '*');
         }
       } else {
         const video = document.querySelector(`#video-player-${vid.id}`);
@@ -147,11 +131,10 @@ export default function VideoFeed({
           if (isActive && !isPaused) {
             video.currentTime = 0; // Start over from beginning
             video.play().catch(() => {});
-            video.muted = false;
           } else {
             video.pause();
-            video.muted = true;
           }
+          video.muted = false; // Never muted!
         }
       }
     });
@@ -384,7 +367,7 @@ export default function VideoFeed({
                     {isIframe ? (
                       <iframe
                         id={`iframe-player-${vid.id}`}
-                        src={`${embedUrl}?autoplay=true&loop=true&muted=true&preload=true&controls=false`}
+                        src={`${embedUrl}?autoplay=false&loop=true&muted=false&preload=true&controls=false`}
                         style={{
                           border: 'none',
                           position: 'absolute',
@@ -404,8 +387,7 @@ export default function VideoFeed({
                         className="video-player-element"
                         src={vid.videoSrc}
                         loop
-                        autoPlay
-                        muted={!isActive}
+                        muted={false}
                         preload="auto"
                         playsInline
                         poster={vid.imageFallback}
