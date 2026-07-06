@@ -171,6 +171,40 @@ export default function VideoFeed({
     };
   }, []);
 
+  const handleIframeLoad = (videoId) => {
+    const iframe = document.querySelector(`#iframe-player-${videoId}`);
+    if (iframe && iframe.contentWindow) {
+      // Set volume to 1 (full volume) to bypass saved cookie volume states
+      iframe.contentWindow.postMessage(JSON.stringify({
+        context: 'player.js',
+        method: 'setVolume',
+        value: 1
+      }), '*');
+      iframe.contentWindow.postMessage(JSON.stringify({
+        method: 'setVolume',
+        value: 1
+      }), '*');
+      iframe.contentWindow.postMessage(JSON.stringify({
+        context: 'player.js',
+        method: 'unmute'
+      }), '*');
+      iframe.contentWindow.postMessage(JSON.stringify({
+        method: 'unmute'
+      }), '*');
+      
+      // Force play if active
+      if (activeVideoId === videoId && !pausedStates[videoId]) {
+        iframe.contentWindow.postMessage(JSON.stringify({
+          context: 'player.js',
+          method: 'play'
+        }), '*');
+        iframe.contentWindow.postMessage(JSON.stringify({
+          method: 'play'
+        }), '*');
+      }
+    }
+  };
+
   // Handle Play/Pause Single Tap Coalescing
   const handleVideoClick = (e, videoId, isIframe) => {
     e.stopPropagation();
@@ -384,6 +418,7 @@ export default function VideoFeed({
                       <iframe
                         id={`iframe-player-${vid.id}`}
                         src={`${embedUrl}?autoplay=${isActive ? 'true' : 'false'}&loop=true&muted=false&preload=true&controls=false`}
+                        onLoad={() => handleIframeLoad(vid.id)}
                         style={{
                           border: 'none',
                           position: 'absolute',
