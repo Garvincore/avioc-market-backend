@@ -74,15 +74,33 @@ export default function VideoFeed({
                 style={{ position: 'relative', width: '100%', height: '100%' }}
                 onDoubleClick={(e) => handleDoubleTap(e, vid.id)}
               >
-                <video
-                  className="video-player-element"
-                  src={vid.videoSrc}
-                  loop
-                  muted
-                  autoPlay
-                  playsInline
-                  poster={vid.imageFallback}
-                />
+                {vid.videoSrc.includes('mediadelivery.net') ? (
+                  <iframe
+                    src={`${vid.videoSrc}?autoplay=true&loop=true&muted=true&preload=true`}
+                    loading="lazy"
+                    style={{
+                      border: 'none',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '16px'
+                    }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen={true}
+                  />
+                ) : (
+                  <video
+                    className="video-player-element"
+                    src={vid.videoSrc}
+                    loop
+                    muted
+                    autoPlay
+                    playsInline
+                    poster={vid.imageFallback}
+                  />
+                )}
                 
                 {/* Visual indicator for tapping instruction */}
                 <div style={{
