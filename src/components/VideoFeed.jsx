@@ -29,6 +29,17 @@ export default function VideoFeed({
   const containerRef = useRef(null);
   const cardRefs = useRef({});
 
+  // 0. Load official Bunny.net Player.js script dynamically
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://assets.mediadelivery.net/playerjs/player-0.1.0.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   // 1. Setup IntersectionObserver to track the active snapped video card in viewport
   useEffect(() => {
     if (videos.length > 0 && !activeVideoId) {
@@ -111,15 +122,18 @@ export default function VideoFeed({
 
     if (isIframe) {
       const iframe = document.querySelector(`#iframe-player-${videoId}`);
-      if (iframe && iframe.contentWindow) {
-        const action = nextPausedState ? 'pause' : 'play';
-        const message = JSON.stringify({
-          context: 'player.js',
-          version: '0.0.10',
-          event: action,
-          value: ''
-        });
-        iframe.contentWindow.postMessage(message, '*');
+      if (iframe && window.playerjs) {
+        // Use Player.js library to control Bunny Stream iframe
+        try {
+          const player = new window.playerjs.Player(iframe);
+          if (nextPausedState) {
+            player.pause();
+          } else {
+            player.play();
+          }
+        } catch (err) {
+          console.warn("PlayerJS control error:", err);
+        }
       }
     } else {
       const video = document.querySelector(`#video-player-${videoId}`);
@@ -174,7 +188,7 @@ export default function VideoFeed({
     try {
       const role = localStorage.getItem('avioc_role') || 'user';
       const response = await apiService.postComment(activeCommentsVideo.id, {
-        userId: currentUser.id || currentUser.id,
+        userId: currentUser.id || currentUser._id,
         userName: currentUser.name,
         userRole: role,
         text: commentText
