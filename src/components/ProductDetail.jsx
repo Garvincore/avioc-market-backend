@@ -30,11 +30,13 @@ export default function ProductDetail({
 
   // Prefilled WhatsApp link
   const inquiryAction = product.type === 'service' ? 'would like to book it.' : 'would like to buy it.';
+  const productUrl = `https://avioc-market.web.app/?product=${product.id || product._id}`;
   const imageSuffix = (product.image && !product.image.startsWith('data:image/')) 
     ? `\n\nProduct Photo: ${product.image}` 
     : '';
+  const linkSuffix = `\n\nView Listing: ${productUrl}`;
   const whatsappMsg = encodeURIComponent(
-    `Hello ${shop.name}! I saw "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market and ${inquiryAction}${imageSuffix}`
+    `Hello ${shop.name}! I saw "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market and ${inquiryAction}${imageSuffix}${linkSuffix}`
   );
   const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 

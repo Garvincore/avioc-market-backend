@@ -256,11 +256,20 @@ export default function VideoFeed({
 
           // Construct pre-filled WhatsApp message
           const inquiryAction = product.type === 'service' ? 'I want to book.' : 'Is it still available?';
-          const imageSuffix = (product.image && !product.image.startsWith('data:image/')) 
-            ? `\n\nProduct Photo: ${product.image}` 
-            : '';
+          const productUrl = `https://avioc-market.web.app/?product=${product.id || product._id}`;
+          
+          let mediaPreviewUrl = '';
+          if (vid.videoSrc && vid.videoSrc.includes('mediadelivery.net')) {
+            mediaPreviewUrl = vid.videoSrc.replace('/embed/', '/play/').split('?')[0] + '/thumbnail.jpg';
+          } else if (product.image && !product.image.startsWith('data:image/')) {
+            mediaPreviewUrl = product.image;
+          }
+
+          const imageSuffix = mediaPreviewUrl ? `\n\nProduct Photo: ${mediaPreviewUrl}` : '';
+          const linkSuffix = `\n\nView Listing: ${productUrl}`;
+
           const whatsappMsg = encodeURIComponent(
-            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}${imageSuffix}`
+            `Hello ${shop.name}! I saw your video for "${product.title}" (UGX ${product.price.toLocaleString()}) on Avioc Market. ${inquiryAction}${imageSuffix}${linkSuffix}`
           );
           const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=${whatsappMsg}`;
 
