@@ -567,23 +567,6 @@ export default function VideoFeed({
           <div 
             className="comments-drawer glass" 
             onClick={e => e.stopPropagation()}
-            style={{
-              position: 'fixed',
-              bottom: 0,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '100%',
-              maxWidth: '500px',
-              height: '65vh',
-              background: 'var(--bg-primary)',
-              borderTopLeftRadius: '24px',
-              borderTopRightRadius: '24px',
-              borderTop: '1.5px solid var(--border-glass)',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              boxShadow: '0 -8px 32px rgba(0,0,0,0.5)'
-            }}
           >
             {/* Drawer Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--border-glass)', paddingBottom: '12px' }}>
