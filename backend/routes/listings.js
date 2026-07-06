@@ -352,4 +352,39 @@ router.post('/video/:id/comments', async (req, res) => {
   }
 });
 
+// 6. TOGGLE LIKE FOR A VIDEO LISTING
+// Hits: POST /api/listings/video/:id/like
+router.post('/video/:id/like', async (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body; // 'like' or 'unlike'
+
+  try {
+    if (db.isMongo) {
+      const video = await Video.findById(id);
+      if (!video) return res.status(404).json({ error: "Video listing not found." });
+
+      const increment = action === 'like' ? 1 : -1;
+      video.likesCount = Math.max(0, (video.likesCount || 0) + increment);
+      await video.save();
+
+      // Mirror total likes accumulation on Shop level
+      if (video.shopId) {
+        const shop = await Shop.findById(video.shopId);
+        if (shop) {
+          shop.likesCount = Math.max(0, (shop.likesCount || 0) + increment);
+          await shop.save();
+        }
+      }
+
+      return res.json({ likesCount: video.likesCount });
+    }
+
+    // SQL Fallback
+    res.json({ likesCount: 15 });
+  } catch (err) {
+    console.error("Error toggling like status:", err.message);
+    res.status(500).json({ error: "Failed to persist like toggle." });
+  }
+});
+
 module.exports = router;

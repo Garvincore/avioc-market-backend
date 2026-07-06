@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, DollarSign, Clock, Trash2, CheckCircle2, UserCheck, MapPin, Plus, Package } from 'lucide-react';
+import { ShoppingBag, DollarSign, Clock, Trash2, CheckCircle2, UserCheck, MapPin, Plus, Package, X, Camera } from 'lucide-react';
 import { apiService } from '../services/api';
 
 export default function SellerDashboard({ 
@@ -7,11 +7,20 @@ export default function SellerDashboard({
   shop, 
   products, 
   onDeleteListing, 
-  onOpenUpload 
+  onOpenUpload,
+  onUpdateShop
 }) {
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'catalog'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'catalog', 'settings'
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Settings form states
+  const [shopName, setShopName] = useState(shop.name || '');
+  const [shopBio, setShopBio] = useState(shop.bio || '');
+  const [shopLocation, setShopLocation] = useState(shop.location || '');
+  const [shopWhatsapp, setShopWhatsapp] = useState(shop.whatsappNumber || shop.whatsapp || '');
+  const [avatarBase64, setAvatarBase64] = useState(shop.avatarUrl || shop.avatar || '');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   // Fetch shop orders on mount
   useEffect(() => {
@@ -22,16 +31,14 @@ export default function SellerDashboard({
         setOrders(data);
       } catch (err) {
         console.warn("Using local memory fallback for orders logs.");
-        // Seed local fallback from localStorage if available
-        const local = localStorage.getItem(`avioc_orders_${shop.id}`);
+        const local = localStorage.getItem(`avioc_orders_${shop.id || shop._id}`);
         if (local) {
           setOrders(JSON.parse(local));
         } else {
-          // Default mock orders
           const mockOrders = [
             {
               id: "ord_sample_1",
-              shop_id: shop.id,
+              shop_id: shop.id || shop._id,
               listing_id: products[0]?.id || "prod_royal_rolex",
               product_title: products[0]?.title || "Double-Egg Chapati Rolex (The Royal)",
               buyer_name: "John Mukasa",
@@ -39,11 +46,11 @@ export default function SellerDashboard({
               quantity: 2,
               total_amount: 13000,
               status: "pending",
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString() // 3 hours ago
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
             },
             {
               id: "ord_sample_2",
-              shop_id: shop.id,
+              shop_id: shop.id || shop._id,
               listing_id: products[1]?.id || "prod_kikoyi_maxi",
               product_title: products[1]?.title || "Premium Kikoyi Maxi Dress",
               buyer_name: "Sarah Namubiru",
@@ -51,11 +58,11 @@ export default function SellerDashboard({
               quantity: 1,
               total_amount: 180000,
               status: "delivered",
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() // 1 day ago
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
             }
           ];
           setOrders(mockOrders);
-          localStorage.setItem(`avioc_orders_${shop.id}`, JSON.stringify(mockOrders));
+          localStorage.setItem(`avioc_orders_${shop.id || shop._id}`, JSON.stringify(mockOrders));
         }
       } finally {
         setLoading(false);
@@ -63,7 +70,53 @@ export default function SellerDashboard({
     };
 
     fetchOrders();
-  }, [shop.id]);
+  }, [shop.id, shop._id]);
+
+  // Handle profile image file change and base64 conversion
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image is too large! Please choose an image smaller than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarBase64(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Save Shop Settings to backend
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    if (!shopName.trim()) return;
+
+    setSavingSettings(true);
+    try {
+      const response = await apiService.updateProfile({
+        name: shopName,
+        bio: shopBio,
+        location: shopLocation,
+        whatsappNumber: shopWhatsapp,
+        avatarUrl: avatarBase64
+      });
+
+      if (response.shop) {
+        alert("Shop settings saved successfully! 🇺🇬");
+        if (onUpdateShop) {
+          onUpdateShop(response.shop);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save shop settings. Please check your network and try again.");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   // Mark Order as Delivered
   const handleMarkDelivered = async (orderId) => {
@@ -71,23 +124,19 @@ export default function SellerDashboard({
       await apiService.updateOrderStatus(orderId, 'delivered');
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o));
     } catch (err) {
-      // Local memory updates
       const updated = orders.map(o => o.id === orderId ? { ...o, status: 'delivered' } : o);
       setOrders(updated);
-      localStorage.setItem(`avioc_orders_${shop.id}`, JSON.stringify(updated));
+      localStorage.setItem(`avioc_orders_${shop.id || shop._id}`, JSON.stringify(updated));
     }
     alert("Order status marked as Delivered! The buyer has been notified. 🇺🇬");
   };
 
-  // Filter listings belonging to this shop
-  const shopListings = products.filter(p => p.shopId === shop.id);
-
-  // Stats calculations
+  const shopListings = products.filter(p => p.shopId === (shop.id || shop._id));
   const totalRevenue = orders.reduce((acc, o) => acc + parseFloat(o.total_amount), 0);
   const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1100 }}>
       <div 
         className="shop-profile-modal glass" 
         onClick={(e) => e.stopPropagation()}
@@ -107,20 +156,20 @@ export default function SellerDashboard({
         {/* Shop Info Summary */}
         <div style={{ padding: '24px 24px 12px', borderBottom: '1px solid var(--border-glass)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <img 
-            src={shop.avatar} 
-            alt={shop.name} 
+            src={avatarBase64 || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120'} 
+            alt={shopName} 
             style={{ width: '60px', height: '60px', borderRadius: '50%', border: '2px solid var(--color-emerald)', objectFit: 'cover' }} 
           />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: '800' }}>{shop.name} Dashboard</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '800' }}>{shopName} Dashboard</h3>
               <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-green)', padding: '2px 10px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: '700' }}>
                 VERIFIED SHOP
               </span>
             </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
               <MapPin size={14} style={{ color: 'var(--color-emerald)' }} />
-              Address: {shop.location || 'Kampala, Uganda'}
+              Address: {shopLocation || 'Kampala, Uganda'}
             </p>
           </div>
         </div>
@@ -143,6 +192,14 @@ export default function SellerDashboard({
               <Package size={16} /> Manage Catalog ({shopListings.length})
             </span>
           </button>
+          <button 
+            className={`shop-tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <UserCheck size={16} /> Shop Settings
+            </span>
+          </button>
         </div>
 
         {/* Dashboard Body */}
@@ -151,12 +208,9 @@ export default function SellerDashboard({
           {/* Tab 1: Orders and Revenue */}
           {activeTab === 'orders' && (
             <div>
-              {/* Metrics cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-                
-                {/* Metric: Revenue */}
                 <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-emerald)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justify: 'center' }}>
                     <DollarSign size={24} />
                   </div>
                   <div>
@@ -167,9 +221,8 @@ export default function SellerDashboard({
                   </div>
                 </div>
 
-                {/* Metric: Sales Count */}
                 <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#3b82f6', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#3b82f6', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justify: 'center' }}>
                     <ShoppingBag size={24} />
                   </div>
                   <div>
@@ -180,9 +233,8 @@ export default function SellerDashboard({
                   </div>
                 </div>
 
-                {/* Metric: Deliveries Pending */}
                 <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-crimson)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-crimson)', width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justify: 'center' }}>
                     <Clock size={24} />
                   </div>
                   <div>
@@ -194,7 +246,6 @@ export default function SellerDashboard({
                 </div>
               </div>
 
-              {/* Orders Table */}
               <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '16px' }}>Incoming Transactions Logs</h4>
               {loading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0' }}>
@@ -325,6 +376,124 @@ export default function SellerDashboard({
               )}
             </div>
           )}
+
+          {/* Tab 3: Shop Settings */}
+          {activeTab === 'settings' && (
+            <form onSubmit={handleSaveSettings} style={{ maxWidth: '550px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '4px' }}>Edit Shop Information</h4>
+              
+              {/* Profile Avatar Upload */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ position: 'relative', width: '90px', height: '90px' }}>
+                  <img 
+                    src={avatarBase64 || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=120'} 
+                    alt="avatar preview" 
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-glass)' }}
+                  />
+                  <label 
+                    htmlFor="shop-avatar-picker" 
+                    style={{ 
+                      position: 'absolute', 
+                      bottom: '0', 
+                      right: '0', 
+                      background: 'var(--color-emerald)', 
+                      color: 'black', 
+                      borderRadius: '50%', 
+                      width: '28px', 
+                      height: '28px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                      border: '2px solid var(--bg-primary)'
+                    }}
+                  >
+                    <Camera size={14} />
+                  </label>
+                  <input 
+                    type="file" 
+                    id="shop-avatar-picker" 
+                    accept="image/*" 
+                    onChange={handleAvatarChange}
+                    style={{ display: 'none' }}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '0.9rem' }}>Shop Profile Photo</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '4px' }}>Select an image file under 2MB. Converts instantly to base64.</div>
+                </div>
+              </div>
+
+              {/* Shop Name */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="settings-shop-name">Shop Display Name</label>
+                <input 
+                  type="text" 
+                  id="settings-shop-name"
+                  className="form-input"
+                  value={shopName}
+                  onChange={e => setShopName(e.target.value)}
+                  required
+                />
+              </div>
+
+              {/* Shop Bio */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="settings-shop-bio">Shop Bio & Description</label>
+                <textarea 
+                  id="settings-shop-bio"
+                  rows={3}
+                  className="form-input"
+                  style={{ resize: 'none' }}
+                  value={shopBio}
+                  onChange={e => setShopBio(e.target.value)}
+                  placeholder="Tell buyers what you sell or specialize in..."
+                />
+              </div>
+
+              {/* Shop Address / Location */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="settings-shop-location">Address / Location</label>
+                <input 
+                  type="text" 
+                  id="settings-shop-location"
+                  className="form-input"
+                  value={shopLocation}
+                  onChange={e => setShopLocation(e.target.value)}
+                  placeholder="e.g. Wandegeya Market Shop B12, Kampala"
+                  required
+                />
+              </div>
+
+              {/* WhatsApp Connection */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="settings-shop-whatsapp">WhatsApp Contact Number</label>
+                <input 
+                  type="tel" 
+                  id="settings-shop-whatsapp"
+                  className="form-input"
+                  value={shopWhatsapp}
+                  onChange={e => setShopWhatsapp(e.target.value)}
+                  placeholder="e.g. 256701234567"
+                  required
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                <button 
+                  type="submit" 
+                  className="checkout-btn" 
+                  style={{ width: 'auto', padding: '0 32px', background: 'var(--color-emerald)', color: '#000', fontWeight: '700' }}
+                  disabled={savingSettings}
+                >
+                  {savingSettings ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
+            </form>
+          )}
+
         </div>
       </div>
     </div>

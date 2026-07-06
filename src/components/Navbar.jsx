@@ -15,7 +15,8 @@ export default function Navbar({
   isCartOpen,
   setIsCartOpen,
   isDashboardOpen,
-  setIsDashboardOpen
+  setIsDashboardOpen,
+  openBuyerProfile
 }) {
 
   // Handlers to clear states when navigating
@@ -53,9 +54,7 @@ export default function Navbar({
       if (setIsCartOpen) setIsCartOpen(false);
       openDashboard();
     } else {
-      if (window.confirm(`Logged in as Buyer: ${currentUser.name}\nDo you want to sign out?`)) {
-        onLogout();
-      }
+      if (openBuyerProfile) openBuyerProfile();
     }
   };
 
@@ -64,6 +63,9 @@ export default function Navbar({
   const isExploreActive = currentView === 'explore' && !isCartOpen && !isDashboardOpen;
   const isCartActive = !!isCartOpen;
   const isAccountActive = !!isDashboardOpen;
+
+  // Custom User Avatar selection
+  const userAvatar = currentUser ? (currentUser.avatarUrl || currentUser.avatar) : '';
 
   return (
     <>
@@ -147,12 +149,23 @@ export default function Navbar({
             {/* User Authentication Status */}
             {currentUser ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '1px solid var(--border-glass)', paddingLeft: '12px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem' }}>
+                {userAvatar ? (
+                  <img 
+                    src={userAvatar} 
+                    alt="profile preview" 
+                    onClick={handleAccountClick}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--color-emerald)', cursor: 'pointer' }}
+                  />
+                ) : null}
+                <div 
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', fontSize: '0.8rem', cursor: 'pointer' }}
+                  onClick={handleAccountClick}
+                >
                   <span style={{ fontWeight: '700', color: 'var(--color-text-primary)' }}>
                     {currentUser.name}
                   </span>
                   <span style={{ color: 'var(--color-text-muted)', fontSize: '0.7rem' }}>
-                    {currentRole === 'seller' ? 'Shop Owner' : 'Buyer'}
+                    {currentRole === 'seller' ? 'Shop Owner' : 'Buyer Profile'}
                   </span>
                 </div>
                 <button 
@@ -224,7 +237,16 @@ export default function Navbar({
           onClick={handleAccountClick}
         >
           {currentUser ? (
-            currentRole === 'seller' ? (
+            userAvatar ? (
+              <>
+                <img 
+                  src={userAvatar} 
+                  alt="Avatar" 
+                  style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid var(--color-emerald)' }}
+                />
+                <span>Profile</span>
+              </>
+            ) : currentRole === 'seller' ? (
               <>
                 <LayoutDashboard size={20} />
                 <span>Dashboard</span>
@@ -232,7 +254,7 @@ export default function Navbar({
             ) : (
               <>
                 <UserCheck size={20} />
-                <span>Sign Out</span>
+                <span>Profile</span>
               </>
             )
           ) : (

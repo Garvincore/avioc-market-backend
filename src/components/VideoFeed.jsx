@@ -12,7 +12,14 @@ export default function VideoFeed({
   currentUser,
   onOpenAuth
 }) {
-  const [likesState, setLikesState] = useState({});
+  const [likesState, setLikesState] = useState(() => {
+    try {
+      const stored = localStorage.getItem('avioc_liked_videos');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const [hearts, setHearts] = useState([]); // [{id, x, y}] for floating animation
   const [activeVideoId, setActiveVideoId] = useState(null);
   
@@ -20,11 +27,12 @@ export default function VideoFeed({
   const [pausedStates, setPausedStates] = useState({});
   const clickTimeoutRef = useRef({});
   
-  // Comments Drawer States
+  // Comments & Likes counts
   const [activeCommentsVideo, setActiveCommentsVideo] = useState(null);
   const [localComments, setLocalComments] = useState([]);
   const [commentText, setCommentText] = useState('');
   const [dynamicCommentsCount, setDynamicCommentsCount] = useState({});
+  const [dynamicLikesCount, setDynamicLikesCount] = useState({});
 
   const containerRef = useRef(null);
   const cardRefs = useRef({});
@@ -148,12 +156,37 @@ export default function VideoFeed({
     }
   };
 
-  // Handle like toggle
-  const handleLike = (videoId) => {
-    setLikesState(prev => ({
-      ...prev,
-      [videoId]: !prev[videoId]
-    }));
+  // Handle like toggle and save to MongoDB
+  const handleLike = async (videoId) => {
+    const isCurrentlyLiked = !!likesState[videoId];
+    const action = isCurrentlyLiked ? 'unlike' : 'like';
+
+    // Toggle local likesState optimistically
+    const nextState = {
+      ...likesState,
+      [videoId]: !isCurrentlyLiked
+    };
+    setLikesState(nextState);
+    localStorage.setItem('avioc_liked_videos', JSON.stringify(nextState));
+
+    try {
+      const response = await apiService.toggleLike(videoId, action);
+      if (response && response.likesCount !== undefined) {
+        setDynamicLikesCount(prev => ({
+          ...prev,
+          [videoId]: response.likesCount
+        }));
+      }
+    } catch (err) {
+      console.error("Like toggle server error:", err);
+      // Revert state on error
+      const reverted = {
+        ...likesState,
+        [videoId]: isCurrentlyLiked
+      };
+      setLikesState(reverted);
+      localStorage.setItem('avioc_liked_videos', JSON.stringify(reverted));
+    }
   };
 
   // Double tap to like animation
@@ -481,7 +514,7 @@ export default function VideoFeed({
                     <Heart size={22} fill={isLiked ? 'var(--color-crimson)' : 'none'} />
                   </button>
                   <span className="action-label">
-                    {isLiked ? 'Liked' : vid.likes}
+                    {dynamicLikesCount[vid.id] !== undefined ? dynamicLikesCount[vid.id] : (vid.likes || 0)}
                   </span>
                 </div>
 
@@ -530,7 +563,7 @@ export default function VideoFeed({
 
       {/* Persistent Bottom Comments Drawer (TikTok Style) */}
       {activeCommentsVideo && (
-        <div className="modal-overlay" onClick={() => setActiveCommentsVideo(null)} style={{ zIndex: 100 }}>
+        <div className="modal-overlay" onClick={() => setActiveCommentsVideo(null)} style={{ zIndex: 1100 }}>
           <div 
             className="comments-drawer glass" 
             onClick={e => e.stopPropagation()}

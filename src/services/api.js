@@ -179,5 +179,27 @@ export const apiService = {
       console.error('Failed to save listing comment:', err);
       throw err;
     }
+  },
+
+  toggleLike: async (videoId, action) => {
+    try {
+      const response = await axios.post(`${API_URL}/listings/video/${videoId}/like`, { action });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to toggle like on server:', err);
+      throw err;
+    }
+  },
+
+  updateProfile: async (profileData) => {
+    try {
+      const response = await axios.put(`${API_URL}/auth/profile`, profileData, {
+        headers: getAuthHeaders()
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Failed to update profile details on server:', err);
+      throw err;
+    }
   }
 };

@@ -9,6 +9,7 @@ import CreatePostModal from './components/CreatePostModal';
 import AuthModal from './components/AuthModal';
 import ProductDetail from './components/ProductDetail';
 import SellerDashboard from './components/SellerDashboard';
+import BuyerProfileModal from './components/BuyerProfileModal';
 
 // Mock Data
 import { apiService } from './services/api';
@@ -28,6 +29,7 @@ export default function App() {
   // New Modal States
   const [activeProductDetail, setActiveProductDetail] = useState(null);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
+  const [isBuyerProfileOpen, setIsBuyerProfileOpen] = useState(false);
 
   // Stateful Data
   const [productsList, setProductsList] = useState([]);
@@ -312,6 +314,7 @@ export default function App() {
         setIsCartOpen={setIsCartOpen}
         isDashboardOpen={isDashboardOpen}
         setIsDashboardOpen={setIsDashboardOpen}
+        openBuyerProfile={() => setIsBuyerProfileOpen(true)}
       />
 
       {/* Warning Banner */}
@@ -402,6 +405,32 @@ export default function App() {
           onClose={() => setIsDashboardOpen(false)} 
           onDeleteListing={handleDeleteListing}
           onOpenUpload={() => setIsUploadOpen(true)}
+          onUpdateShop={(updatedShop) => {
+            setCurrentUser(updatedShop);
+            localStorage.setItem('avioc_seller', JSON.stringify(updatedShop));
+            // Update local shopsList state so all listing headers update their name & avatar previews instantly
+            setShopsList(prev => prev.map(s => s.id === updatedShop._id ? {
+              ...s,
+              name: updatedShop.name,
+              avatar: updatedShop.avatarUrl,
+              bio: updatedShop.bio,
+              location: updatedShop.location,
+              whatsapp: updatedShop.whatsappNumber
+            } : s));
+          }}
+        />
+      )}
+
+      {/* Buyer Settings Profile Modal */}
+      {isBuyerProfileOpen && currentUser && (
+        <BuyerProfileModal
+          currentUser={currentUser}
+          onClose={() => setIsBuyerProfileOpen(false)}
+          onLogout={handleLogout}
+          onUpdateProfile={(updatedUser) => {
+            setCurrentUser(updatedUser);
+            localStorage.setItem('avioc_user', JSON.stringify(updatedUser));
+          }}
         />
       )}
 
