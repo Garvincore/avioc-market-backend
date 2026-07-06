@@ -266,4 +266,58 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 4. SECRET ADMIN SHOP APPROVAL ENDPOINT
+// Hits: PUT /api/auth/approve-seller/:handle?secret=Kajubicore
+router.put('/approve-seller/:handle', async (req, res) => {
+  const { handle } = req.params;
+  const { secret } = req.query;
+
+  if (secret !== 'Kajubicore') {
+    return res.status(403).json({ error: "Unauthorized access: Invalid admin secret key." });
+  }
+
+  const cleanHandle = handle.toLowerCase().trim();
+
+  try {
+    // A: MongoDB Route
+    if (db.isMongo) {
+      const shop = await Shop.findOneAndUpdate(
+        { handle: cleanHandle },
+        { status: 'approved', isVerified: true },
+        { new: true }
+      );
+
+      if (!shop) {
+        return res.status(404).json({ error: `Shop handle @${cleanHandle} not found.` });
+      }
+
+      return res.json({ 
+        message: `Shop '${shop.name}' has been successfully APPROVED and VERIFIED! 🇺🇬`, 
+        shop 
+      });
+    }
+
+    // B: SQL Fallback
+    const result = await db.query(
+      `UPDATE shops SET status = 'approved', is_verified = true 
+       WHERE handle = $1 
+       RETURNING id, name, handle, status, is_verified`,
+      [cleanHandle]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: `Shop handle @${cleanHandle} not found.` });
+    }
+
+    res.json({ 
+      message: `Shop '${result.rows[0].name}' approved successfully (Local Fallback)!`, 
+      shop: result.rows[0] 
+    });
+
+  } catch (err) {
+    console.error('Error during admin shop approval:', err);
+    res.status(500).json({ error: "Failed to approve seller account." });
+  }
+});
+
 module.exports = router;
