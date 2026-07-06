@@ -121,7 +121,7 @@ export default function CreatePostModal({
       shopId,
       productId: newProduct.id,
       videoSrc: URL.createObjectURL(selectedFile), // local object URL preview
-      imageFallback: fallbackImg,
+      imageFallback: imagePreview,
       caption: `${caption} #${processedTags.join(' #')}`,
       likes: "1",
       comments: "0",

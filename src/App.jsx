@@ -218,6 +218,7 @@ export default function App() {
           price: newProduct.price,
           category: newProduct.category,
           type: newProduct.type,
+          imageUrl: newProduct.imageUrl,
           caption: newVideo.caption,
           tags: newVideo.tags
         }, fileBlob);
